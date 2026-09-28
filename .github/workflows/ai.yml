@@ -1,0 +1,29 @@
+name: ai-service CI
+
+# Se dispara solo cuando cambia el ai service, shared/common, el pom raiz
+# o el Dockerfile (todo lo que puede afectar a esta imagen).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/ai/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/ai.yml'
+  pull_request:
+    paths:
+      - 'services/ai/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/ai.yml'
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/service-pipeline.yml
+    with:
+      module: ai

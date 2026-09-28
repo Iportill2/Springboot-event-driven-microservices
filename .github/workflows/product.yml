@@ -1,0 +1,29 @@
+name: product-service CI
+
+# Se dispara solo cuando cambia el product service, shared/common, el pom raiz
+# o el Dockerfile (todo lo que puede afectar a esta imagen).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/product/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/product.yml'
+  pull_request:
+    paths:
+      - 'services/product/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/product.yml'
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/service-pipeline.yml
+    with:
+      module: product

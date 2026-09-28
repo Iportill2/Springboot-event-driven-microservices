@@ -1,0 +1,29 @@
+name: user-service CI
+
+# Se dispara solo cuando cambia el user service, shared/common, el pom raiz
+# o el Dockerfile (todo lo que puede afectar a esta imagen).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/user/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/user.yml'
+  pull_request:
+    paths:
+      - 'services/user/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/user.yml'
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/service-pipeline.yml
+    with:
+      module: user
