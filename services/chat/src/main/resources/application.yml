@@ -1,0 +1,33 @@
+server:
+  port: ${PORT:8085}
+
+spring:
+  application:
+    name: chat-service
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/chat}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  chat:
+    # Ventana para canjear el ticket: si no se usa, caduca y hay que pedir otro.
+    # El handshake lleva este valor en la URL, asi que conviene que sea corto.
+    ticket-ttl-seconds: ${CHAT_TICKET_TTL_SECONDS:30}
+    # Origenes admitidos en el handshake. El navegador los comprueba, pero el
+    # servicio no los aplica a la autorizacion: la da el ticket.
+    allowed-origins: ${CHAT_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:80,https://localhost:443}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
