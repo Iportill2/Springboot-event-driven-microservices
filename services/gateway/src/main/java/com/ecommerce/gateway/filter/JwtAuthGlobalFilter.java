@@ -27,6 +27,14 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/users/resend-verification"
     );
 
+    /**
+     * El handshake del chat se autentica con un ticket de un solo uso, no con el
+     * JWT: el navegador no puede enviar cabeceras en un WebSocket, asi que el
+     * Bearer nunca llega. Se exime solo esta ruta exacta y nunca el prefijo
+     * entero, para que /api/chat/ws-ticket siga exigiendo un token valido.
+     */
+    private static final String WS_PATH = "/api/chat/ws";
+
     private final JwtService jwtService;
 
     public JwtAuthGlobalFilter(JwtService jwtService) {
@@ -39,7 +47,9 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         HttpMethod method = exchange.getRequest().getMethod();
 
-        boolean publicPath = PUBLIC_PATHS.stream().anyMatch(path::endsWith)
+        boolean wsUpgrade = path.equals(WS_PATH) || path.startsWith(WS_PATH + "/");
+        boolean publicPath = wsUpgrade
+                || PUBLIC_PATHS.stream().anyMatch(path::endsWith)
                 || (method == HttpMethod.GET && path.startsWith("/api/products"));
 
         if (publicPath) {

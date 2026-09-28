@@ -51,6 +51,14 @@ spring:
               uri: ${AI_SERVICE_URI:http://localhost:8084}
               predicates:
                 - Path=/api/ai/**
+            # Sin RequestRateLimiter a proposito: aplicaria una bolsa de tokens al
+            # handshake, que es una sola peticion por conexion y no un trafico
+            # repetitivo. Limitar el envio de mensajes es responsabilidad del
+            # servicio de chat.
+            - id: chat-service
+              uri: ${CHAT_SERVICE_URI:http://localhost:8085}
+              predicates:
+                - Path=/api/chat/**
 
 app:
   jwt:
