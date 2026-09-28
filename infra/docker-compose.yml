@@ -129,7 +129,10 @@ services:
     image: mongo:7
     container_name: ed-mongodb
     restart: unless-stopped
-    profiles: ["async"]
+    # Mongo aparece en "apps" ademas de en "async" porque chat-service, que
+    # depende de el, vive en el perfil "apps". Si Mongo se quedara solo en
+    # "async", levantar unicamente --profile apps haria fallar el depends_on.
+    profiles: ["async", "apps"]
     ports:
       - "27017:27017"
     networks: [ed-network]
@@ -201,6 +204,7 @@ services:
       USER_SERVICE_URI: http://user-service:8081
       PRODUCT_SERVICE_URI: http://product-service:8082
       AI_SERVICE_URI: http://ai-service:8084
+      CHAT_SERVICE_URI: http://chat-service:8085
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
       RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH}
@@ -300,6 +304,31 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
     ports:
       - "8084:8084"
+    networks: [ed-network]
+
+  chat-service:
+    image: ecommerce/chat-service:0.1.0
+    build:
+      context: ..
+      dockerfile: services/Dockerfile
+      args:
+        MODULE: chat
+    container_name: ed-chat-service
+    profiles: ["apps"]
+    environment:
+      PORT: 8085
+      MONGO_URI: mongodb://mongodb:27017/chat
+      REDIS_HOST: redis
+      CHAT_TICKET_TTL_SECONDS: ${CHAT_TICKET_TTL_SECONDS:-30}
+    # Sin "ports" a proposito. Este servicio solo debe alcanzarse desde la red
+    # interna a traves del gateway: el endpoint que emite tickets se limita a
+    # leer la cabecera X-User-Id y no puede validarla por si misma, porque su
+    # credencial de verdad es el Bearer que valida el gateway.
+    depends_on:
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_healthy
     networks: [ed-network]
 
   nginx:

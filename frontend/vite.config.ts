@@ -13,6 +13,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        // Necesario para el WebSocket del chat: sin esto el proxy responde 400
+        // al handshake porque no reenvia la cabecera Upgrade.
+        ws: true,
       },
     },
   },
