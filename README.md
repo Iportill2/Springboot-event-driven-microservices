@@ -132,6 +132,28 @@ make clean      # down -v + huérfanos + imágenes locales
 .\scripts\dc.ps1 help
 ```
 
+## Tests
+
+Tests unitarios con JUnit 5 + Mockito + AssertJ. **No necesitan Docker ni base de datos**: corren contra la lógica de servicio con las dependencias simuladas.
+
+```powershell
+mvn test                                     # los 5 módulos
+mvn -pl services/product -am test            # un módulo + sus dependencias
+mvn -pl services/user -am test -Dtest=UserServiceTest   # una sola clase
+```
+
+| Módulo | Cobertura |
+|---|---|
+| `shared/common` | `JwtService` (round-trip, firma ajena, expiración, token manipulado), `ApiResponse`, contratos de eventos |
+| `services/user` | `TokenService` (hash SHA-256, unicidad), `UserService` (registro, login, verificación, reenvío), códigos de error, validación de `RegisterRequest` |
+| `services/product` | `ProductService` (CRUD, cache-aside, auto-sanado de caché, publicación de eventos), códigos de error, validación de `ProductRequest` |
+
+Notas:
+
+- Los tests de `shared/common` se ejecutan también en los pipelines de los cuatro servicios, porque `-am` construye `common` como dependencia de todos.
+- La CI los corre sola: `mvn package` incluye la fase `test`.
+- Cobertura pendiente: `@WebMvcTest` para las rutas del gateway, y Testcontainers (PostgreSQL, Redis, Kafka) para los tests de integración con las migraciones de Flyway.
+
 ## Desarrollo local (sin Docker para los servicios)
 
 Con la infraestructura levantada, arranca cada servicio con el script que carga el `.env`:
