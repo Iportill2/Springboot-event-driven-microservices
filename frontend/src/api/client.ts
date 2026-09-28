@@ -1,4 +1,6 @@
 import axios from 'axios'
+import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { ApiResponse, Product, ProductPayload, UserProfile } from './types'
 
 const TOKEN_KEY = 'ed_token'
 const USER_KEY = 'ed_user'
@@ -45,11 +47,63 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export async function login(username: string, password: string): Promise<AuthUser> {
-  const res = await api.post('/users/login', { username, password })
-  const data = res.data?.data as AuthUser
-  saveAuth(data)
-  return data
+// El JWT caduca mientras la sesion sigue "viva" en localStorage. Sin esto, cada
+// peticion devuelve 401 pero la interfaz continua mostrando al usuario como
+// autenticado. El handler lo registra main.ts, que es donde vive el router.
+type UnauthorizedHandler = () => void
+let unauthorizedHandler: UnauthorizedHandler | null = null
+
+export function onUnauthorized(handler: UnauthorizedHandler): void {
+  unauthorizedHandler = handler
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    // Solo importa si ya teniamos token: un 401 sin sesion es un login
+    // fallido y no debe cerrar nada.
+    if (axios.isAxiosError(error) && error.response?.status === 401 && getToken()) {
+      unauthorizedHandler?.()
+    }
+    return Promise.reject(error)
+  },
+)
+
+/** Desenvuelve el sobre ApiResponse y devuelve solo `data`. */
+async function unwrap<T>(request: Promise<AxiosResponse<ApiResponse<T>>>): Promise<T> {
+  const res = await request
+  return res.data.data
+}
+
+function get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  return unwrap(api.get<ApiResponse<T>>(url, config))
+}
+
+function post<T>(url: string, body?: unknown): Promise<T> {
+  return unwrap(api.post<ApiResponse<T>>(url, body))
+}
+
+function put<T>(url: string, body?: unknown): Promise<T> {
+  return unwrap(api.put<ApiResponse<T>>(url, body))
+}
+
+function del<T>(url: string): Promise<T> {
+  return unwrap(api.delete<ApiResponse<T>>(url))
+}
+
+/** Extrae el mensaje de error del backend con un texto por defecto. */
+export function errorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const body = err.response?.data as { message?: string } | undefined
+    if (body?.message) return body.message
+  }
+  return fallback
+}
+
+/* ---------- Auth ---------- */
+
+export function login(username: string, password: string): Promise<AuthUser> {
+  return post<AuthUser>('/users/login', { username, password })
 }
 
 export interface RegisterPayload {
@@ -61,15 +115,40 @@ export interface RegisterPayload {
   newsletter?: boolean
 }
 
-export async function register(payload: RegisterPayload): Promise<void> {
-  await api.post('/users/register', payload)
+export function register(payload: RegisterPayload): Promise<void> {
+  return post<void>('/users/register', payload)
 }
 
-export async function verifyEmail(token: string): Promise<string> {
-  const res = await api.get('/users/verify', { params: { token } })
-  return res.data?.data as string
+export function verifyEmail(token: string): Promise<string> {
+  return get<string>('/users/verify', { params: { token } })
 }
 
-export async function resendVerification(email: string): Promise<void> {
-  await api.post('/users/resend-verification', { email })
+export function resendVerification(email: string): Promise<void> {
+  return post<void>('/users/resend-verification', { email })
+}
+
+export function fetchProfile(): Promise<UserProfile> {
+  return get<UserProfile>('/users/me')
+}
+
+export function fetchUsers(): Promise<UserProfile[]> {
+  return get<UserProfile[]>('/users')
+}
+
+/* ---------- Productos ---------- */
+
+export function fetchProducts(): Promise<Product[]> {
+  return get<Product[]>('/products')
+}
+
+export function createProduct(payload: ProductPayload): Promise<Product> {
+  return post<Product>('/products', payload)
+}
+
+export function updateProduct(id: number, payload: ProductPayload): Promise<Product> {
+  return put<Product>(`/products/${id}`, payload)
+}
+
+export function deleteProduct(id: number): Promise<void> {
+  return del<void>(`/products/${id}`)
 }

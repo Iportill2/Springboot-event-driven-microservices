@@ -177,6 +177,153 @@ h3 {
   filter: none;
 }
 
+/* ---------- Vista de pagina ---------- */
+.page-head {
+  margin: 8px 0 24px;
+}
+
+.page-head h1 {
+  font-size: clamp(24px, 4vw, 32px);
+  margin: 0 0 6px;
+  color: var(--text-h);
+}
+
+.page-head p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ---------- Panel de datos ---------- */
+.panel {
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.panel + .panel {
+  margin-top: 20px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0 12px 10px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.data-table td {
+  padding: 12px;
+  color: var(--text-h);
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background: var(--field-bg);
+}
+
+.data-table .num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.data-table .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ---------- Distintivos ---------- */
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--field-bg);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.badge-accent {
+  color: var(--accent-2);
+}
+
+.badge-danger {
+  color: var(--danger);
+}
+
+/* ---------- Formularios ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.form-grid label.wide {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+/* ---------- Aviso en linea ---------- */
+.notice {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin: 0 0 16px;
+  border: 1px solid var(--glass-border);
+  background: var(--field-bg);
+  color: var(--muted);
+}
+
+.notice-error {
+  color: var(--danger);
+}
+
+.notice-ok {
+  color: var(--accent-2);
+}
+
 /* ---------- Transición global de vista ---------- */
 .view-enter-active {
   transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);

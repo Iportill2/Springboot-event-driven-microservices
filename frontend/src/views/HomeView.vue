@@ -1,41 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { api, clearAuth, getStoredUser } from '../api/client'
-import ThemeToggle from '../components/ThemeToggle.vue'
-import BrandMark from '../components/BrandMark.vue'
-import { brand } from '../brand'
+import { RouterLink } from 'vue-router'
+import { errorMessage, fetchProducts } from '../api/client'
+import type { Product } from '../api/types'
+import { useAuth } from '../composables/useAuth'
 
-interface Product {
-  id: number
-  name: string
-  sku: string
-  description?: string
-  price: number
-}
-
-const router = useRouter()
-const user = getStoredUser()
+const { user, authenticated, isAdmin } = useAuth()
 const products = ref<Product[]>([])
 const loading = ref(true)
 const error = ref('')
 const ready = ref(false)
-
-function logout() {
-  clearAuth()
-  router.push({ name: 'login' })
-}
 
 onMounted(async () => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => (ready.value = true))
   })
   try {
-    const res = await api.get('/products')
-    products.value = res.data?.data ?? []
+    products.value = await fetchProducts()
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { message?: string } } }
-    error.value = err?.response?.data?.message ?? 'Error al cargar el catálogo'
+    error.value = errorMessage(e, 'Error al cargar el catálogo')
   } finally {
     loading.value = false
   }
@@ -44,61 +27,51 @@ onMounted(async () => {
 
 <template>
   <div :class="['home', { 'is-ready': ready }]">
-    <header class="topbar glass">
-      <div class="brand">
-        <div class="logo">
-          <BrandMark :size="24" />
-        </div>
-        <span class="name">{{ brand.name }}</span>
+    <section class="hero">
+      <h1 class="reveal" style="--d: 40ms">
+        {{ authenticated ? `Hola, ${user?.username}` : 'Catálogo' }}
+      </h1>
+      <p class="reveal lead" style="--d: 130ms">
+        Explora el catálogo. Todo lo que ves aparece en cadena, sin sorpresas.
+      </p>
+      <p v-if="!authenticated" class="reveal guest-note" style="--d: 190ms">
+        Estás navegando como invitado.
+        <RouterLink to="/login">Inicia sesión</RouterLink> para ver tu perfil y el chat.
+      </p>
+      <p v-else-if="isAdmin" class="reveal guest-note" style="--d: 190ms">
+        <RouterLink to="/admin/products">Gestiona el catálogo</RouterLink> o
+        <RouterLink to="/admin/users">consulta los usuarios</RouterLink>.
+      </p>
+    </section>
+
+    <section class="catalog">
+      <div class="catalog-head reveal" style="--d: 220ms">
+        <h2>Catálogo</h2>
+        <span v-if="!loading && !error" class="count"
+          >{{ products.length }} producto{{ products.length === 1 ? '' : 's' }}</span
+        >
       </div>
 
-      <div class="user-group">
-        <ThemeToggle />
-        <div class="user">
-          <span class="user-name">{{ user?.username ?? 'invitado' }}</span>
-          <span class="roles">{{ user?.roles?.join(', ') }}</span>
-        </div>
-        <button class="btn btn-ghost" @click="logout">Salir</button>
-      </div>
-    </header>
+      <p v-if="loading" class="muted">Cargando productos…</p>
+      <p v-else-if="error" class="error">{{ error }}</p>
+      <p v-else-if="!products.length" class="muted">No hay productos.</p>
 
-    <main class="content">
-      <section class="hero">
-        <h1 class="reveal" style="--d: 40ms">Hola, {{ user?.username }}</h1>
-        <p class="reveal lead" style="--d: 130ms">
-          Explora el catálogo. Todo lo que ves aparece en cadena, sin sorpresas.
-        </p>
-      </section>
-
-      <section class="catalog">
-        <div class="catalog-head reveal" style="--d: 220ms">
-          <h2>Catálogo</h2>
-          <span v-if="!loading && !error" class="count"
-            >{{ products.length }} producto{{ products.length === 1 ? '' : 's' }}</span
-          >
-        </div>
-
-        <p v-if="loading" class="muted">Cargando productos…</p>
-        <p v-else-if="error" class="error">{{ error }}</p>
-        <p v-else-if="!products.length" class="muted">No hay productos.</p>
-
-        <TransitionGroup v-else name="card" tag="div" class="grid">
-          <article
-            v-for="(p, i) in products"
-            :key="p.id"
-            class="product glass"
-            :style="{ '--d': `${i * 70}ms` }"
-          >
-            <div class="price-pill">
-              <span>{{ p.price.toFixed(2) }} €</span>
-            </div>
-            <h3>{{ p.name }}</h3>
-            <p>{{ p.description }}</p>
-            <code>{{ p.sku }}</code>
-          </article>
-        </TransitionGroup>
-      </section>
-    </main>
+      <TransitionGroup v-else name="card" tag="div" class="grid">
+        <article
+          v-for="(p, i) in products"
+          :key="p.id"
+          class="product glass"
+          :style="{ '--d': `${i * 70}ms` }"
+        >
+          <div class="price-pill">
+            <span>{{ p.price.toFixed(2) }} €</span>
+          </div>
+          <h3>{{ p.name }}</h3>
+          <p>{{ p.description }}</p>
+          <code>{{ p.sku }}</code>
+        </article>
+      </TransitionGroup>
+    </section>
   </div>
 </template>
 
@@ -106,69 +79,6 @@ onMounted(async () => {
 .home {
   position: relative;
   z-index: 1;
-}
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 16px;
-  padding: 12px 16px;
-  border-radius: 18px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo {
-  display: flex;
-}
-
-.name {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-h);
-}
-
-.user-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-.roles {
-  color: var(--muted);
-  font-size: 12px;
-  padding: 3px 10px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: var(--field-bg);
-}
-
-.content {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 24px 16px 80px;
 }
 
 .hero h1 {
@@ -179,7 +89,23 @@ onMounted(async () => {
 
 .lead {
   color: var(--muted);
-  margin: 0 0 40px;
+  margin: 0 0 8px;
+}
+
+.guest-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 32px;
+}
+
+.guest-note a {
+  color: var(--accent-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.guest-note a:hover {
+  text-decoration: underline;
 }
 
 .catalog-head {
@@ -274,12 +200,5 @@ onMounted(async () => {
 .card-enter-from {
   opacity: 0;
   transform: translateY(26px) scale(0.97);
-}
-
-@media (max-width: 560px) {
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 </style>

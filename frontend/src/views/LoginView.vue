@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { login } from '../api/client'
+import { useRoute, useRouter } from 'vue-router'
+import { errorMessage, login } from '../api/client'
+import { applyAuth } from '../composables/useAuth'
 import ThemeToggle from '../components/ThemeToggle.vue'
 import BrandMark from '../components/BrandMark.vue'
 import { brand } from '../brand'
 
 const router = useRouter()
+const route = useRoute()
 const username = ref('')
 const password = ref('')
 const error = ref('')
@@ -14,9 +16,19 @@ const loading = ref(false)
 const ready = ref(false)
 const leaving = ref(false)
 
-function exitToHome() {
+function exitTo(target: string | { name: 'home' }) {
   leaving.value = true
-  window.setTimeout(() => router.push({ name: 'home' }), 720)
+  window.setTimeout(() => void router.push(target), 720)
+}
+
+// El destino viene de la query string, que es entrada no confiable. Solo se
+// aceptan rutas internas para no convertir el login en un open redirect.
+function safeRedirect(): string | { name: 'home' } {
+  const target = route.query.redirect
+  if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+    return target
+  }
+  return { name: 'home' }
 }
 
 async function onSubmit() {
@@ -28,11 +40,10 @@ async function onSubmit() {
   }
   loading.value = true
   try {
-    await login(username.value.trim(), password.value)
-    exitToHome()
+    applyAuth(await login(username.value.trim(), password.value))
+    exitTo(safeRedirect())
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { message?: string } } }
-    error.value = err?.response?.data?.message ?? 'No se pudo iniciar sesión'
+    error.value = errorMessage(e, 'No se pudo iniciar sesión')
   } finally {
     loading.value = false
   }
