@@ -34,16 +34,16 @@ Cliente / SPA
       ▼
 Spring Cloud Gateway  ── JWT, rate limiting (Redis)
       │
- ┌────┼───────────┐
- ▼    ▼           ▼
-User Product    AI
-8081  8082      8084
- │      │
- ▼      ▼
-PostgreSQL / Redis
- │
- ▼
-Kafka (eventos de negocio)
+  ┌─────┼───────────┬─────────┐
+  ▼     ▼           ▼         ▼
+ User  Product     AI        Chat
+ 8081  8082       8084      8085
+  │     │           │         │
+  ▼     ▼           │         ▼
+PostgreSQL / Redis  │     MongoDB
+  │                  │
+  ▼                  │
+Kafka (eventos)     └──► Redis (tickets de chat)
 ```
 
 - **User Service**: registro, login, usuarios, roles (`USER`, `ADMIN`). Emite `UserRegistered`.
@@ -81,7 +81,7 @@ Ajusta los valores si lo necesitas. No hay secretos hardcodeados en el código n
 docker compose --env-file .env -f infra/docker-compose.yml up -d
 ```
 
-**Infraestructura + microservicios** (gateway, user, product, ai, nginx):
+**Infraestructura + microservicios** (gateway, user, product, ai, chat, nginx):
 
 ```powershell
 docker compose --env-file .env -f infra/docker-compose.yml --profile apps up --build
@@ -150,7 +150,7 @@ mvn -pl services/user -am test -Dtest=UserServiceTest   # una sola clase
 
 Notas:
 
-- Los tests de `shared/common` se ejecutan también en los pipelines de los cuatro servicios, porque `-am` construye `common` como dependencia de todos.
+- Los tests de `shared/common` se ejecutan también en los pipelines de los cinco servicios, porque `-am` construye `common` como dependencia de todos.
 - La CI los corre sola: `mvn package` incluye la fase `test`.
 - Cobertura pendiente: `@WebMvcTest` para las rutas del gateway, y Testcontainers (PostgreSQL, Redis, Kafka) para los tests de integración con las migraciones de Flyway.
 
@@ -196,6 +196,7 @@ npm run dev      # http://localhost:5173  (login: admin / admin123)
 | User Service | http://localhost:8081 |
 | Product Service | http://localhost:8082 |
 | AI Service | http://localhost:8084 |
+| Chat Service | sin puerto publicado: solo `http://localhost:8080/api/chat/**` a través del gateway |
 | Nginx | https://localhost (http://localhost:80 redirige a :443) |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
@@ -204,6 +205,9 @@ npm run dev      # http://localhost:5173  (login: admin / admin123)
 Credenciales por defecto (definidas en `.env`): admin `admin / admin123`, Grafana `admin / admin`.
 
 > **HTTPS**: el certificado es autofirmado (`CN=localhost`) y se genera automáticamente la primera vez que se levanta el stack (contenedor `ssl-init` → volumen `ssl-certs`). El navegador mostrará un aviso de seguridad que debes aceptar; en producción se usarán certificados de una CA.
+
+> **Chat WebSocket**: no se envía `Authorization` en el handshake. El frontend pide un ticket de un solo uso con `POST /api/chat/ws-ticket` (JWT requerido), el gateway lo valida y reenvía identidad; `GET /api/chat/ws?ticket=...` consume ese ticket en Redis (TTL 30s, `getAndDelete`) y establece la conexión.
+
 
 ## Ejemplo de uso
 
@@ -232,7 +236,7 @@ Invoke-RestMethod -Method Post -Uri "$base/api/products" -Headers $h `
 ├── Makefile              # Atajos de contenedores (make up/down/...)
 ├── infra/                # docker-compose, postgres, nginx, prometheus, grafana, ssl-init
 ├── scripts/              # Utilidades de desarrollo (dev.ps1, dc.ps1)
-├── services/             # Microservicios (gateway, user, product, ai)
+├── services/             # Microservicios (gateway, user, product, ai, chat)
 ├── shared/common/        # Código compartido (seguridad, eventos, API)
 ├── frontend/             # SPA Vue 3 + TypeScript (login, catálogo)
 └── pom.xml               # Maven multi-módulo
@@ -257,7 +261,7 @@ Los 4 pipelines de servicio reutilizan `service-pipeline.yml` (`workflow_call`).
 - [ ] Order Service (pedidos) + eventos `OrderCreated` / `OrderPaid` / `OrderCancelled`
 - [ ] Inventory Service (stock) + `StockUpdated`
 - [ ] Notification Service (RabbitMQ)
-- [ ] Chat Service (WebSockets + MongoDB)
+- [ ] Chat Service: handshake WebSocket, tickets de un solo uso y MongoDB (listo el canal; falta enrutado de mensajes, historial y presencia)
 - [ ] AI Service con Ollama
 - [ ] Analytics Service
 - [x] Frontend Vue 3 + TypeScript + Vite (login + catálogo)
