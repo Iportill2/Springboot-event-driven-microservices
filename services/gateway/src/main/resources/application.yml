@@ -1,0 +1,70 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: user-register
+              uri: ${USER_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/users/register
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: ${REGISTER_RATE_LIMIT_REPLENISH:5}
+                    redis-rate-limiter.burstCapacity: ${REGISTER_RATE_LIMIT_BURST:10}
+                    key-resolver: "#{@ipKeyResolver}"
+            - id: user-resend-verification
+              uri: ${USER_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/users/resend-verification
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: ${RESEND_RATE_LIMIT_REPLENISH:3}
+                    redis-rate-limiter.burstCapacity: ${RESEND_RATE_LIMIT_BURST:6}
+                    key-resolver: "#{@ipKeyResolver}"
+            - id: user-service
+              uri: ${USER_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/users/**
+            - id: product-service
+              uri: ${PRODUCT_SERVICE_URI:http://localhost:8082}
+              predicates:
+                - Path=/api/products/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:20}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
+                    key-resolver: "#{@ipKeyResolver}"
+            - id: ai-service
+              uri: ${AI_SERVICE_URI:http://localhost:8084}
+              predicates:
+                - Path=/api/ai/**
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
