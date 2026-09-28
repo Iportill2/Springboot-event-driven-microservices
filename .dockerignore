@@ -1,0 +1,27 @@
+# Raíz del contexto de build (ver infra/docker-compose.yml -> context: ..)
+
+# Artefactos de build (se recompilan dentro de la imagen)
+**/target
+
+# Git / IDE
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+.settings
+.project
+.classpath
+
+# Configuración local (no debe entrar en la imagen)
+.env
+.env.local
+
+# Infra y frontend no se necesitan para construir los servicios
+infra
+frontend
+scripts
+node_modules

@@ -1,0 +1,10 @@
+* text=auto
+
+# Los scripts de shell deben usar LF para funcionar dentro de los contenedores.
+*.sh text eol=lf
+
+# Ficheros de configuración
+.env text eol=lf
+.env.example text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
