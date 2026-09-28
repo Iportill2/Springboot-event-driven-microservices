@@ -1,0 +1,341 @@
+name: event-driven
+
+# Toda la credenciales/configuración salen del fichero .env de la raíz.
+# No hay secretos hardcodeados en este fichero.
+#
+# Uso:
+#   Infraestructura:
+#     docker compose --env-file .env -f infra/docker-compose.yml up -d
+#
+#   Infraestructura + microservicios:
+#     docker compose --env-file .env -f infra/docker-compose.yml --profile apps up --build
+#
+#   Servicios async (MongoDB / RabbitMQ) cuando se necesiten:
+#     docker compose --env-file .env -f infra/docker-compose.yml --profile async up -d
+#
+#   Ollama (IA local):
+#     docker compose --env-file .env -f infra/docker-compose.yml --profile ai up -d
+
+services:
+  ############################################
+  # Infraestructura base (siempre disponible)
+  ############################################
+  postgres:
+    image: postgres:16-alpine
+    container_name: ed-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      USER_DB: ${USER_DB}
+      USER_DB_USER: ${USER_DB_USER}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      PRODUCT_DB: ${PRODUCT_DB}
+      PRODUCT_DB_USER: ${PRODUCT_DB_USER}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [ed-network]
+
+  redis:
+    image: redis:7-alpine
+    container_name: ed-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [ed-network]
+
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: ed-kafka
+    restart: unless-stopped
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,PLAINTEXT://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    networks: [ed-network]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ed-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [ed-network]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ed-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks: [ed-network]
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: ed-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks: [ed-network]
+
+  ############################################
+  # Mensajería / datos async (perfil: async)
+  #   MongoDB  -> Chat Service
+  #   RabbitMQ -> tareas asíncronas (email, notificaciones)
+  ############################################
+  mongodb:
+    image: mongo:7
+    container_name: ed-mongodb
+    restart: unless-stopped
+    profiles: ["async"]
+    ports:
+      - "27017:27017"
+    networks: [ed-network]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: ed-rabbitmq
+    restart: unless-stopped
+    profiles: ["async"]
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks: [ed-network]
+
+  ############################################
+  # Ollama (perfil: ai)
+  ############################################
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ed-ollama
+    profiles: ["ai"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks: [ed-network]
+
+  ############################################
+  # Microservicios (perfil: apps)
+  # docker compose --env-file .env -f infra/docker-compose.yml --profile apps up --build
+  #
+  # Plantilla para añadir un servicio nuevo:
+  #   order-service:
+  #     image: ecommerce/order-service:0.1.0
+  #     build: { context: .., dockerfile: services/Dockerfile, args: { MODULE: order } }
+  #     container_name: ed-order-service
+  #     profiles: ["apps"]
+  #     environment:
+  #       PORT: 8083
+  #       DB_HOST: postgres
+  #       DB_NAME: ${ORDER_DB}
+  #       DB_USER: ${ORDER_DB_USER}
+  #       DB_PASSWORD: ${ORDER_DB_PASSWORD}
+  #       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  #       JWT_SECRET: ${JWT_SECRET}
+  #     ports: ["8083:8083"]
+  #     depends_on:
+  #       postgres: { condition: service_healthy }
+  #       kafka: { condition: service_healthy }
+  #     networks: [ed-network]
+  ############################################
+  gateway:
+    image: ecommerce/api-gateway:0.1.0
+    build:
+      context: ..
+      dockerfile: services/Dockerfile
+      args:
+        MODULE: gateway
+    container_name: ed-gateway
+    profiles: ["apps"]
+    environment:
+      PORT: 8080
+      REDIS_HOST: redis
+      USER_SERVICE_URI: http://user-service:8081
+      PRODUCT_SERVICE_URI: http://product-service:8082
+      AI_SERVICE_URI: http://ai-service:8084
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST}
+      REGISTER_RATE_LIMIT_REPLENISH: ${REGISTER_RATE_LIMIT_REPLENISH}
+      REGISTER_RATE_LIMIT_BURST: ${REGISTER_RATE_LIMIT_BURST}
+      RESEND_RATE_LIMIT_REPLENISH: ${RESEND_RATE_LIMIT_REPLENISH}
+      RESEND_RATE_LIMIT_BURST: ${RESEND_RATE_LIMIT_BURST}
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [ed-network]
+
+  user-service:
+    image: ecommerce/user-service:0.1.0
+    build:
+      context: ..
+      dockerfile: services/Dockerfile
+      args:
+        MODULE: user
+    container_name: ed-user-service
+    profiles: ["apps"]
+    environment:
+      PORT: 8081
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${USER_DB}
+      DB_USER: ${USER_DB_USER}
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+      VERIFY_TOKEN_TTL_HOURS: ${VERIFY_TOKEN_TTL_HOURS}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks: [ed-network]
+
+  product-service:
+    image: ecommerce/product-service:0.1.0
+    build:
+      context: ..
+      dockerfile: services/Dockerfile
+      args:
+        MODULE: product
+    container_name: ed-product-service
+    profiles: ["apps"]
+    environment:
+      PORT: 8082
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${PRODUCT_DB}
+      DB_USER: ${PRODUCT_DB_USER}
+      DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks: [ed-network]
+
+  ai-service:
+    image: ecommerce/ai-service:0.1.0
+    build:
+      context: ..
+      dockerfile: services/Dockerfile
+      args:
+        MODULE: ai
+    container_name: ed-ai-service
+    profiles: ["apps"]
+    environment:
+      PORT: 8084
+      OLLAMA_BASE_URL: http://ollama:11434
+    ports:
+      - "8084:8084"
+    networks: [ed-network]
+
+  nginx:
+    image: nginx:alpine
+    container_name: ed-nginx
+    profiles: ["apps"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../frontend/dist:/usr/share/nginx/html:ro
+      - ssl-certs:/etc/nginx/ssl:ro
+    depends_on:
+      gateway:
+        condition: service_started
+      ssl-init:
+        condition: service_completed_successfully
+    networks: [ed-network]
+
+  # Genera un certificado autofirmado la primera vez y lo comparte con Nginx
+  ssl-init:
+    build:
+      context: ./ssl-init
+    image: ecommerce/ssl-init:0.1.0
+    container_name: ed-ssl-init
+    restart: "no"
+    volumes:
+      - ssl-certs:/certs
+    networks: [ed-network]
+
+networks:
+  ed-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  ollama-data:
+  ssl-certs:

@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "uid": "microservices-1",
+    "title": "Microservices Overview",
+    "tags": ["spring-boot", "microservices"],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "10s",
+    "time": { "from": "now-15m", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Services up (/actuator/prometheus)",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          { "expr": "count(up == 1)", "legendFormat": "up services" }
+        ]
+      },
+      {
+        "id": 2,
+        "type": "timeseries",
+        "title": "HTTP requests (req/s)",
+        "gridPos": { "h": 8, "w": 10, "x": 0, "y": 4 },
+        "targets": [
+          { "expr": "sum by (application) (rate(http_server_requests_seconds_count[5m]))",
+            "legendFormat": "{{application}}" }
+        ]
+      },
+      {
+        "id": 3,
+        "type": "timeseries",
+        "title": "HTTP 5xx errors (req/s)",
+        "gridPos": { "h": 8, "w": 10, "x": 0, "y": 12 },
+        "targets": [
+          { "expr": "sum by (application) (rate(http_server_requests_seconds_count{status=~\"5..\"}[5m]))",
+            "legendFormat": "{{application}}" }
+        ]
+      },
+      {
+        "id": 4,
+        "type": "timeseries",
+        "title": "JVM heap used (MB)",
+        "gridPos": { "h": 8, "w": 10, "x": 0, "y": 20 },
+        "targets": [
+          { "expr": "sum by (application) (jvm_memory_used_bytes{area=\"heap\"}) / 1024 / 1024",
+            "legendFormat": "{{application}}" }
+        ]
+      },
+      {
+        "id": 5,
+        "type": "timeseries",
+        "title": "Kafka producer records sent/s",
+        "gridPos": { "h": 8, "w": 10, "x": 0, "y": 28 },
+        "targets": [
+          { "expr": "sum by (application) (rate(kafka_producer_record_send_total{app_id!=\"\"}[5m]))",
+            "legendFormat": "{{application}}" }
+        ]
+      }
+    ]
+  }
+}
