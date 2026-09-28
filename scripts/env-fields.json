@@ -1,0 +1,126 @@
+{
+  "sections": [
+    {
+      "id": "brand",
+      "title": "Marca",
+      "description": "Nombre, colores, favicon y logo de la tienda. «Ir a la web» reconstruye el frontend con la marca al pulsarlo.",
+      "fields": [
+        {
+          "key": "VITE_APP_NAME",
+          "label": "Nombre de la tienda",
+          "type": "text",
+          "hint": "Se muestra en el título, el login y la barra superior."
+        },
+        { "key": "VITE_PRIMARY_COLOR", "label": "Color principal", "type": "color" },
+        { "key": "VITE_SECONDARY_COLOR", "label": "Color secundario", "type": "color" },
+        { "key": "VITE_ACCENT_COLOR", "label": "Color de acento", "type": "color" },
+        { "key": "VITE_PRIMARY_COLOR_DARK", "label": "Color principal (oscuro)", "type": "color" },
+        { "key": "VITE_SECONDARY_COLOR_DARK", "label": "Color secundario (oscuro)", "type": "color" },
+        { "key": "VITE_ACCENT_COLOR_DARK", "label": "Color de acento (oscuro)", "type": "color" },
+        {
+          "key": "VITE_FAVICON_PATH",
+          "label": "Favicon",
+          "type": "text",
+          "placeholder": "./marca/favicon.png",
+          "hint": "Escribe la ruta relativa a la raíz del proyecto o sube el archivo con «Cargar archivo…» (se copiará a marca/). Vacío = se genera con la inicial del nombre.",
+          "upload": { "accept": [".svg", ".png", ".ico"], "maxBytes": 1048576 }
+        },
+        {
+          "key": "VITE_LOGO_PATH",
+          "label": "Logo",
+          "type": "text",
+          "placeholder": "./marca/logo.svg",
+          "hint": "Escribe la ruta relativa a la raíz del proyecto o sube el archivo con «Cargar archivo…» (se copiará a marca/). Vacío = se usa el mark con iniciales.",
+          "upload": { "accept": [".svg", ".png", ".ico"], "maxBytes": 1048576 }
+        }
+      ]
+    },
+    {
+      "id": "postgres",
+      "title": "PostgreSQL",
+      "fields": [
+        { "key": "POSTGRES_USER", "label": "Superusuario", "type": "text", "required": true },
+        { "key": "POSTGRES_PASSWORD", "label": "Contraseña del superusuario", "type": "password", "required": true }
+      ]
+    },
+    {
+      "id": "databases",
+      "title": "Bases de datos de los servicios",
+      "fields": [
+        { "key": "USER_DB", "label": "Base de datos de usuarios", "type": "text", "required": true },
+        { "key": "USER_DB_USER", "label": "Usuario de la BD de usuarios", "type": "text", "required": true },
+        { "key": "USER_DB_PASSWORD", "label": "Contraseña de la BD de usuarios", "type": "password", "required": true },
+        { "key": "PRODUCT_DB", "label": "Base de datos de productos", "type": "text", "required": true },
+        { "key": "PRODUCT_DB_USER", "label": "Usuario de la BD de productos", "type": "text", "required": true },
+        { "key": "PRODUCT_DB_PASSWORD", "label": "Contraseña de la BD de productos", "type": "password", "required": true }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Seguridad / JWT",
+      "fields": [
+        {
+          "key": "JWT_SECRET",
+          "label": "Clave secreta JWT",
+          "type": "password",
+          "required": true,
+          "generate": true,
+          "validate": { "min": 32 },
+          "hint": "Mínimo recomendado: 32 caracteres. Usa «Generar» para crear una aleatoria."
+        },
+        {
+          "key": "JWT_EXPIRATION_MS",
+          "label": "Expiración del token (ms)",
+          "type": "number",
+          "required": true,
+          "hint": "3600000 = 1 hora."
+        }
+      ]
+    },
+    {
+      "id": "admin",
+      "title": "Usuario admin",
+      "description": "Cuenta admin creada al arrancar el User Service.",
+      "fields": [
+        { "key": "ADMIN_PASSWORD", "label": "Contraseña de admin", "type": "password", "required": true }
+      ]
+    },
+    {
+      "id": "observability",
+      "title": "Observabilidad (Grafana)",
+      "fields": [
+        { "key": "GRAFANA_ADMIN_USER", "label": "Usuario de Grafana", "type": "text", "required": true },
+        { "key": "GRAFANA_ADMIN_PASSWORD", "label": "Contraseña de Grafana", "type": "password", "required": true }
+      ]
+    },
+    {
+      "id": "gateway",
+      "title": "Rate limiting del API Gateway",
+      "fields": [
+        { "key": "RATE_LIMIT_REPLENISH", "label": "Reabastecimiento", "type": "number", "required": true },
+        { "key": "RATE_LIMIT_BURST", "label": "Ráfaga máxima", "type": "number", "required": true },
+        { "key": "REGISTER_RATE_LIMIT_REPLENISH", "label": "Reabastecimiento del registro", "type": "number", "required": true },
+        { "key": "REGISTER_RATE_LIMIT_BURST", "label": "Ráfaga máxima del registro", "type": "number", "required": true },
+        { "key": "RESEND_RATE_LIMIT_REPLENISH", "label": "Reabastecimiento del reenvío de verificación", "type": "number", "required": true },
+        { "key": "RESEND_RATE_LIMIT_BURST", "label": "Ráfaga máxima del reenvío de verificación", "type": "number", "required": true }
+      ]
+    },
+    {
+      "id": "mail",
+      "title": "Correo electrónico",
+      "description": "Verificación de cuenta. MailHog cae en localhost:8025 y no necesita credenciales. Para SMTP real activa la autenticación.",
+      "fields": [
+        { "key": "MAIL_HOST", "label": "Host SMTP", "type": "text", "required": true, "hint": "mailhog en Docker; localhost si el servicio corre en la máquina." },
+        { "key": "MAIL_PORT", "label": "Puerto SMTP", "type": "number", "required": true, "hint": "MailHog usa 1025." },
+        { "key": "MAIL_USERNAME", "label": "Usuario SMTP", "type": "text", "hint": "Vacío = sin autenticación (MailHog)." },
+        { "key": "MAIL_PASSWORD", "label": "Contraseña SMTP", "type": "password", "hint": "Vacío = sin autenticación (MailHog)." },
+        { "key": "MAIL_SMTP_AUTH", "label": "Autenticación SMTP", "type": "text", "default": "false", "hint": "true/false. true solo para proveedores reales (Gmail, SendGrid…)." },
+        { "key": "MAIL_SMTP_STARTTLS", "label": "STARTTLS", "type": "text", "default": "false", "hint": "true/false." },
+        { "key": "MAIL_FROM", "label": "Remitente (email)", "type": "text", "required": true },
+        { "key": "MAIL_FROM_NAME", "label": "Remitente (nombre)", "type": "text", "required": true, "hint": "Nombre de la tienda, se usa en el asunto y firma del correo." },
+        { "key": "APP_PUBLIC_URL", "label": "URL pública del frontend", "type": "text", "required": true, "hint": "Base del enlace de verificación: {URL}/verify?token=…" },
+        { "key": "VERIFY_TOKEN_TTL_HOURS", "label": "Validez del enlace (horas)", "type": "number", "required": true, "hint": "24 por defecto." }
+      ]
+    }
+  ]
+}
