@@ -1,0 +1,29 @@
+name: chat-service CI
+
+# Se dispara solo cuando cambia el chat service, shared/common, el pom raiz
+# o el Dockerfile (todo lo que puede afectar a esta imagen).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/chat/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/chat.yml'
+  pull_request:
+    paths:
+      - 'services/chat/**'
+      - 'shared/common/**'
+      - 'pom.xml'
+      - 'services/Dockerfile'
+      - '.github/workflows/service-pipeline.yml'
+      - '.github/workflows/chat.yml'
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/service-pipeline.yml
+    with:
+      module: chat

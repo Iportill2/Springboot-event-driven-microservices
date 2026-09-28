@@ -14,7 +14,7 @@ on:
   workflow_call:
     inputs:
       module:
-        description: 'Modulo Maven a construir (gateway, user, product, ai)'
+        description: 'Modulo Maven a construir (gateway, user, product, ai, chat)'
         required: true
         type: string
 
