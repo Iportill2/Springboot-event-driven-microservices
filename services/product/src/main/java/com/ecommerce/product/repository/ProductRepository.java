@@ -10,6 +10,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsBySku(String sku);
 
+    /**
+     * Para validar un UPDATE hay que excluir al propio producto de la comprobacion,
+     * si no un producto no podria renombrarse ni reescribir su propio SKU.
+     */
+    boolean existsBySkuAndIdNot(String sku, Long id);
+
     List<Product> findByActiveTrue();
 
     Optional<Product> findByIdAndActiveTrue(Long id);

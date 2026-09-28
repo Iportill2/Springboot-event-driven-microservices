@@ -58,7 +58,7 @@ public class ProductService {
 
         log.debug("Cache MISS for {}, loading from PostgreSQL", cacheKey);
         Product product = repository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
         redisTemplate.opsForValue().set(cacheKey, serialize(product), CACHE_TTL);
         return ProductResponse.from(product);
     }
@@ -78,7 +78,10 @@ public class ProductService {
     @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
         Product product = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
+        if (repository.existsBySkuAndIdNot(request.sku(), id)) {
+            throw new IllegalArgumentException("SKU already exists: " + request.sku());
+        }
         product.setName(request.name());
         product.setSku(request.sku());
         product.setDescription(request.description());
@@ -90,6 +93,11 @@ public class ProductService {
 
     @Transactional
     public void delete(Long id) {
+        // JpaRepository.deleteById es un no-op silencioso si el id no existe, asi que
+        // sin esta comprobacion un DELETE de un id inexistente devolveria 200.
+        if (!repository.existsById(id)) {
+            throw new ProductNotFoundException(id);
+        }
         repository.deleteById(id);
         redisTemplate.delete(cacheKey(id));
     }
