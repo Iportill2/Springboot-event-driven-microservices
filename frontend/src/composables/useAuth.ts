@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { AuthUser } from '../api/client'
 import { clearAuth, getStoredUser, saveAuth } from '../api/client'
+import { stopSession } from './useChatSocket'
 
 // Estado de sesion a nivel de modulo, no dentro del composable: el router guard,
 // el layout y las vistas tienen que observar exactamente la misma referencia.
@@ -15,9 +16,14 @@ export function applyAuth(auth: AuthUser): void {
   user.value = auth
 }
 
-/** Cierra la sesion. La usa el logout manual y el interceptor de 401. */
+/**
+ * Cierra la sesion. La usa el logout manual y el interceptor de 401, que son los
+ * dos caminos por los que se puede perder la sesion, asi que el socket del chat
+ * se cierra aqui y no en las vistas: no queda ningun sitio que se pueda olvidar.
+ */
 export function logout(): void {
   clearAuth()
+  stopSession()
   user.value = null
 }
 

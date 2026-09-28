@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorMessage, login } from '../api/client'
 import { applyAuth } from '../composables/useAuth'
+import { startSession } from '../composables/useChatSocket'
 import ThemeToggle from '../components/ThemeToggle.vue'
 import BrandMark from '../components/BrandMark.vue'
 import { brand } from '../brand'
@@ -41,6 +42,9 @@ async function onSubmit() {
   loading.value = true
   try {
     applyAuth(await login(username.value.trim(), password.value))
+    // Deliberadamente sin await: si el chat service esta caido, el login tiene
+    // que completarse igual y el socket simplemente no llegara a abrirse.
+    void startSession()
     exitTo(safeRedirect())
   } catch (e: unknown) {
     error.value = errorMessage(e, 'No se pudo iniciar sesión')

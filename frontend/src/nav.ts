@@ -19,6 +19,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Catálogo', to: '/' },
   { label: 'Mi perfil', to: '/profile', auth: true },
+  { label: 'Chat', to: '/chat', auth: true },
   { label: 'Pedidos', soon: true, auth: true },
   { label: 'Carrito', soon: true, auth: true },
   { label: 'Asistente IA', soon: true, auth: true },

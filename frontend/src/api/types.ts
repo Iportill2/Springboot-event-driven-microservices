@@ -37,3 +37,9 @@ export interface UserProfile {
   enabled: boolean
   createdAt: string | null
 }
+
+/** Ticket opaco para el handshake del WebSocket. Un solo uso y con caducidad. */
+export interface WsTicket {
+  ticket: string
+  expiresInSeconds: number
+}

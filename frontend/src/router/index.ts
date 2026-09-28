@@ -5,6 +5,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import VerifyView from '../views/VerifyView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import ChatView from '../views/ChatView.vue'
 import AdminProductsView from '../views/admin/ProductsView.vue'
 import AdminUsersView from '../views/admin/UsersView.vue'
 import { authenticated, hasAnyRole } from '../composables/useAuth'
@@ -34,6 +35,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'home', component: HomeView },
         { path: 'profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
+        { path: 'chat', name: 'chat', component: ChatView, meta: { requiresAuth: true } },
         {
           path: 'admin/products',
           name: 'admin-products',

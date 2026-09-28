@@ -1,6 +1,12 @@
 import axios from 'axios'
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { ApiResponse, Product, ProductPayload, UserProfile } from './types'
+import type {
+  ApiResponse,
+  Product,
+  ProductPayload,
+  UserProfile,
+  WsTicket,
+} from './types'
 
 const TOKEN_KEY = 'ed_token'
 const USER_KEY = 'ed_user'
@@ -151,4 +157,15 @@ export function updateProduct(id: number, payload: ProductPayload): Promise<Prod
 
 export function deleteProduct(id: number): Promise<void> {
   return del<void>(`/products/${id}`)
+}
+
+/* ---------- Chat ---------- */
+
+/**
+ * Pide un ticket de un solo uso. Va con el Bearer de siempre, asi que lo envia
+ * axios sin problema: el truco es que despues el WebSocket se abre sin cabeceras,
+ * solo con el ticket en la URL.
+ */
+export function requestWsTicket(): Promise<WsTicket> {
+  return post<WsTicket>('/chat/ws-ticket')
 }
