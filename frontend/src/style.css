@@ -1,0 +1,197 @@
+:root {
+  --text-h: #171a26;
+  --muted: #50566a;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --field-bg: rgba(255, 255, 255, 0.5);
+  --brand-a: #6366f1;
+  --brand-b: #a855f7;
+  --brand-c: #ec4899;
+  --brand-a-dark: #818cf8;
+  --brand-b-dark: #c084fc;
+  --brand-c-dark: #f472b6;
+  --accent-1: var(--brand-a);
+  --accent-2: var(--brand-b);
+  --accent-3: var(--brand-c);
+  --danger: #e5484d;
+  --grad-accent: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  --grad-accent-hot: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+  --shadow: 0 18px 50px -20px rgba(76, 63, 160, 0.45);
+  --blob-1: color-mix(in srgb, var(--brand-a) 55%, transparent);
+  --blob-2: color-mix(in srgb, var(--brand-b) 40%, transparent);
+  --blob-3: color-mix(in srgb, var(--brand-c) 32%, transparent);
+  --grid-dot: color-mix(in srgb, var(--brand-c) 18%, transparent);
+  --bg-base: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-a) 7%, #ffffff) 0%,
+    color-mix(in srgb, var(--brand-a) 4%, #ffffff) 45%,
+    color-mix(in srgb, var(--brand-c) 7%, #ffffff) 100%
+  );
+
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color-scheme: light;
+  color: var(--text-h);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  --text-h: #f2f4ff;
+  --muted: #a3a9c4;
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-strong: rgba(255, 255, 255, 0.13);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --field-bg: rgba(255, 255, 255, 0.06);
+  --accent-1: var(--brand-a-dark);
+  --accent-2: var(--brand-b-dark);
+  --accent-3: var(--brand-c-dark);
+  --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.6);
+  --blob-1: color-mix(in srgb, var(--brand-a-dark) 45%, transparent);
+  --blob-2: color-mix(in srgb, var(--brand-b-dark) 42%, transparent);
+  --blob-3: color-mix(in srgb, var(--brand-c-dark) 38%, transparent);
+  --grid-dot: color-mix(in srgb, var(--brand-c-dark) 14%, transparent);
+  --bg-base: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-a-dark) 9%, #0a0c16) 0%,
+    color-mix(in srgb, var(--brand-a-dark) 5%, #12101e) 45%,
+    color-mix(in srgb, var(--brand-c-dark) 10%, #0f0a18) 100%
+  );
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Superficies de cristal ---------- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: var(--shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--field-bg);
+  color: var(--text-h);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.field::placeholder {
+  color: var(--muted);
+}
+
+.field:focus {
+  border-color: var(--accent-2);
+  background: var(--glass-bg-strong);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.16);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 15px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--grad-accent);
+  color: #fff;
+  box-shadow: 0 12px 30px -12px rgba(136, 84, 247, 0.65);
+}
+
+.btn-primary:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 16px 34px -12px rgba(136, 84, 247, 0.75);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-h);
+  backdrop-filter: blur(8px);
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+/* ---------- Reveal escalonado ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.6s ease var(--d, 0ms),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms),
+    filter 0.6s ease var(--d, 0ms);
+}
+
+.is-ready .reveal {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* ---------- Transición global de vista ---------- */
+.view-enter-active {
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.view-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-enter-from {
+  opacity: 0;
+  transform: scale(0.985) translateY(10px);
+}
+
+.view-leave-to {
+  opacity: 0;
+  transform: scale(0.99) translateY(-8px);
+}
